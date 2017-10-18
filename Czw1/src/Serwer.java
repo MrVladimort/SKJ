@@ -44,8 +44,8 @@ public class Serwer {
 				bw.newLine();
 				bw.flush();
 			}else{
-				log("Invalid login");
-				bw.write("Invalid login");
+				log("Invalid pass");
+				bw.write("Invalid pass");
 				bw.newLine();
 				bw.flush();
 				auth = false;
