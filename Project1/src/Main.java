@@ -1,8 +1,7 @@
-import java.util.*;
+import java.util.ArrayList;
 
 public class Main {
-	
-	public static void main(String[] args) {
-		Agent agent = new Agent("192.168.0.22",2222,0, new ArrayList<Agent>());
-	}
+    public static void main(String[]args){
+        Agent agent = new Agent(args[0], Integer.parseInt(args[1]), Integer.parseInt(args[2]));
+    }
 }
