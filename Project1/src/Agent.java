@@ -9,6 +9,10 @@ class Agent {
     int zegar = 0;
     Thread serverThread, zegarThread;
 
+    public static void main(String[]args){
+        Agent agent = new Agent(args[0], Integer.parseInt(args[1]), Integer.parseInt(args[2]));
+    }
+
     private void log(String info) {
         System.out.println("Agent " + this.address + ": " + info);
     }
