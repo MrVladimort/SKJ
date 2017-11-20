@@ -1,24 +1,30 @@
+package project1;
+
 import java.io.*;
-import java.net.*;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.lang.Thread;
+import java.util.LinkedHashSet;
 
 public class Agent {
-    private ArrayList<String> agents = new ArrayList<>();
+    private LinkedHashSet<String> agents = new LinkedHashSet<>();
     private ServerSocket serverSocket;
     private Address address;
     private int zegar = 0;
 
     public static void main(String[] args) {
-        Agent agent;
-        if (args.length == 1)
-            agent = new Agent("localhost", Integer.parseInt(args[0]), 0);
+        if (args.length == 2)
+            new Agent("localhost", Integer.parseInt(args[0]), args[1], 0);
         else
-            agent = new Agent("localhost", Integer.parseInt(args[0]), args[1], 0);
+            new Agent("localhost", Integer.parseInt(args[0]), args[1], args[2], 0);
     }
     
     private void log(String info) {
-        System.out.println("Agent " + this.address + ": " + info);
+        DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss");
+        LocalDateTime now = LocalDateTime.now();
+        System.out.println("["+dtf.format(now)+"]" + " Agent " + this.address + ": " + info);
     }
 
     private static void write(BufferedWriter out, String msg) {
@@ -31,14 +37,14 @@ public class Agent {
         }
     }
     
-    private Agent(String ip, int port, int zegar) {
+    private Agent(String ip, int port, String monitor, int zegar) {
         this.address = new Address(ip, port);
         this.zegar = zegar;
 
         try {
             this.serverSocket = new ServerSocket(this.address.port);
             log("Server is running");
-            notifyAgents();
+            notifyAgents(monitor);
             this.agents.add(this.address.toString());
         } catch (IOException e) {
             e.printStackTrace();
@@ -47,7 +53,7 @@ public class Agent {
         setThreads();
     }
 
-    private Agent(String ip, int port, String parent, int zegar) {
+    private Agent(String ip, int port, String parent, String monitor, int zegar) {
         this.address = new Address(ip, port);
         this.zegar = zegar;
 
@@ -55,7 +61,7 @@ public class Agent {
             this.serverSocket = new ServerSocket(this.address.port);
             log("Server is running");
             getParentAgents(parent);
-            notifyAgents();
+            notifyAgents(monitor);
             maybeSynchronize();
             synchronizeAll();
         } catch (IOException e) {
@@ -79,8 +85,9 @@ public class Agent {
         }
     }
 
-    private void notifyAgents() throws IOException {
-        Socket monitorSocket = new Socket("localhost", 8080);
+    private void notifyAgents(String monitor) throws IOException {
+        Address monitorAddress = new Address(monitor);
+        Socket monitorSocket = new Socket(monitorAddress.ip, monitorAddress.port);
         BufferedWriter outMonitor = new BufferedWriter(new OutputStreamWriter(monitorSocket.getOutputStream()));
         write(outMonitor, "agn " + this.address);
         monitorSocket.close();
