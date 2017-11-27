@@ -11,7 +11,7 @@ import java.util.LinkedHashSet;
 public class Agent {
     private LinkedHashSet<String> agents = new LinkedHashSet<>();
     private ServerSocket serverSocket;
-    private Address address;
+    private KekAddress address;
     private int zegar = 0;
 
     public static void main(String[] args) {
@@ -38,7 +38,7 @@ public class Agent {
     }
     
     private Agent(String ip, int port, String monitor, int zegar) {
-        this.address = new Address(ip, port);
+        this.address = new KekAddress(ip, port);
         this.zegar = zegar;
 
         try {
@@ -54,7 +54,7 @@ public class Agent {
     }
 
     private Agent(String ip, int port, String parent, String monitor, int zegar) {
-        this.address = new Address(ip, port);
+        this.address = new KekAddress(ip, port);
         this.zegar = zegar;
 
         try {
@@ -74,7 +74,7 @@ public class Agent {
     private void synchronizeAll() throws IOException {
         for (String agent : this.agents) {
             if (!agent.equalsIgnoreCase(this.address.toString())) {
-                Address address = new Address(agent);
+                KekAddress address = new KekAddress(agent);
                 Socket socket = new Socket(address.ip, address.port);
 
                 BufferedWriter out = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
@@ -86,14 +86,14 @@ public class Agent {
     }
 
     private void notifyAgents(String monitor) throws IOException {
-        Address monitorAddress = new Address(monitor);
+        KekAddress monitorAddress = new KekAddress(monitor);
         Socket monitorSocket = new Socket(monitorAddress.ip, monitorAddress.port);
         BufferedWriter outMonitor = new BufferedWriter(new OutputStreamWriter(monitorSocket.getOutputStream()));
         write(outMonitor, "agn " + this.address);
         monitorSocket.close();
 
         for (String agent : this.agents) {
-            Address agentAddress = new Address(agent);
+            KekAddress agentAddress = new KekAddress(agent);
             Socket agentSocket = new Socket(agentAddress.ip, agentAddress.port);
             BufferedWriter outAgent = new BufferedWriter(new OutputStreamWriter(agentSocket.getOutputStream()));
 
@@ -103,7 +103,7 @@ public class Agent {
     }
 
     private void getParentAgents(String parent) throws IOException {
-        Address address = new Address(parent);
+        KekAddress address = new KekAddress(parent);
         Socket parentSocket = new Socket(address.ip, address.port);
         BufferedWriter outParent = new BufferedWriter(new OutputStreamWriter(parentSocket.getOutputStream()));
         BufferedReader inParent = new BufferedReader(new InputStreamReader(parentSocket.getInputStream(), "UTF-8"));
@@ -142,7 +142,7 @@ public class Agent {
         try {
             while (true) {
                 Socket socket = this.serverSocket.accept();
-                Address client = new Address(socket.getInetAddress().toString(), socket.getPort());
+                KekAddress client = new KekAddress(socket.getInetAddress().toString(), socket.getPort());
                 log("Client connected on " + client);
 
                 BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream(), "UTF-8"));
@@ -199,7 +199,7 @@ public class Agent {
 
         for (String agent : this.agents) {
             if (!agent.equalsIgnoreCase(this.address.toString())) {
-                Address address = new Address(agent);
+                KekAddress address = new KekAddress(agent);
                 Socket socket = new Socket(address.ip, address.port);
 
                 BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream(), "UTF-8"));

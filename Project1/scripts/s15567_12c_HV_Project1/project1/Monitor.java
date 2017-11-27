@@ -43,7 +43,7 @@ public class Monitor {
     }
 
     private Monitor(int port) {
-        Address address = new Address("localhost", port);
+        KekAddress address = new KekAddress("localhost", port);
 
         try {
             this.serverSocket = new ServerSocket(address.port);
@@ -60,7 +60,7 @@ public class Monitor {
         try {
             while (true) {
                 Socket socket = serverSocket.accept();
-                Address client = new Address(socket.getInetAddress().toString(), socket.getPort());
+                KekAddress client = new KekAddress(socket.getInetAddress().toString(), socket.getPort());
                 log("Client connected on " + client);
 
                 BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream(), "UTF-8"));
@@ -145,14 +145,14 @@ public class Monitor {
     }
 
     private void sendRequest(String request, String host) throws IOException {
-        Address address = new Address(host);
+        KekAddress address = new KekAddress(host);
         Socket requestSocket = new Socket(address.ip, address.port);
         BufferedWriter requestOut = new BufferedWriter(new OutputStreamWriter(requestSocket.getOutputStream()));
         write(requestOut, request);
     }
 
     private int getTime(String agent) {
-        Address address = new Address(agent);
+        KekAddress address = new KekAddress(agent);
         try {
             Socket socket = new Socket(address.ip, address.port);
 

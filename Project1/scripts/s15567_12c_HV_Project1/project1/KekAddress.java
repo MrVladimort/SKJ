@@ -1,16 +1,16 @@
 package project1;
 
-class Address {
+public class KekAddress {
     String ip;
     int port;
 
-    Address(String addres){
+    KekAddress(String addres){
         String [] arg = addres.split(":");
         this.ip = arg[0];
         this.port = Integer.parseInt(arg[1]);
     }
 
-    Address(String ip, int port){
+    KekAddress(String ip, int port){
         this.ip = ip;
         this.port = port;
     }
