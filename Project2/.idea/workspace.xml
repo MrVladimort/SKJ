@@ -38,7 +38,11 @@
         <entry file="file://$PROJECT_DIR$/src/project2/Test.java">
           <provider selected="true" editor-type-id="text-editor">
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
             <state relative-caret-position="702">
+=======
+            <state relative-caret-position="594">
+>>>>>>> Stashed changes
               <caret line="27" column="8" lean-forward="true" selection-start-line="27" selection-start-column="8" selection-end-line="27" selection-end-column="8" />
 =======
             <state relative-caret-position="102">
@@ -84,7 +88,7 @@
     <detection-done>true</detection-done>
     <sorting>DEFINITION_ORDER</sorting>
   </component>
-  <component name="ProjectFrameBounds" extendedState="7">
+  <component name="ProjectFrameBounds" extendedState="6">
     <option name="x" value="260" />
     <option name="y" value="20" />
     <option name="width" value="1284" />
@@ -374,15 +378,20 @@
       <option name="presentableId" value="Default" />
       <updated>1513353065702</updated>
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
       <workItem from="1513353067482" duration="7153000" />
 =======
       <workItem from="1513353067482" duration="6375000" />
       <workItem from="1513359848983" duration="3860000" />
 >>>>>>> Stashed changes
+=======
+      <workItem from="1513353067482" duration="8244000" />
+>>>>>>> Stashed changes
     </task>
     <servers />
   </component>
   <component name="TimeTrackingManager">
+<<<<<<< Updated upstream
 <<<<<<< Updated upstream
     <option name="totallyTimeSpent" value="7153000" />
   </component>
@@ -393,6 +402,12 @@
   </component>
   <component name="ToolWindowManager">
     <frame x="-8" y="-8" width="1296" height="776" extended-state="7" />
+>>>>>>> Stashed changes
+=======
+    <option name="totallyTimeSpent" value="8244000" />
+  </component>
+  <component name="ToolWindowManager">
+    <frame x="-8" y="-8" width="1936" height="1056" extended-state="6" />
 >>>>>>> Stashed changes
     <editor active="true" />
     <layout>
@@ -532,7 +547,7 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/src/project2/Test.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="702">
+        <state relative-caret-position="594">
           <caret line="27" column="8" lean-forward="true" selection-start-line="27" selection-start-column="8" selection-end-line="27" selection-end-column="8" />
           <folding>
             <element signature="imports" expanded="true" />
