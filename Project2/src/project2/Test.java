@@ -24,7 +24,6 @@ public class Test {
             DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, IPAddress, 8080);
 
             clientSocket.send(sendPacket);
-
             clientSocket.close();
         }
     }

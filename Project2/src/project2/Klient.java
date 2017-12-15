@@ -76,7 +76,7 @@ public class Klient {
         }
     }
 
-    List<InetAddress> listAllBroadcastAddresses() {
+    private List<InetAddress> listAllBroadcastAddresses() {
         try {
             List<InetAddress> broadcastList = new ArrayList<>();
             Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
@@ -94,12 +94,13 @@ public class Klient {
             }
             return broadcastList;
         } catch (IOException e) {
-            return null;
+            return new ArrayList<>();
         }
     }
 
     private void synchronize() {
         log("Synchronize on time " + this.zegar + " and kwant " + this.kwant);
-        log(listAllBroadcastAddresses().toString());
+        List<InetAddress> broadcastList = listAllBroadcastAddresses();
+        log(broadcastList.toString());
     }
 }
