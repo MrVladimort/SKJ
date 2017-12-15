@@ -34,7 +34,11 @@ public class Klient {
         int tmp = 0;
         while (true) {
             if (tmp == this.kwant) {
-                synchronize();
+                try {
+                    synchronize();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
                 tmp = 0;
             }
             tmp++;
@@ -98,9 +102,30 @@ public class Klient {
         }
     }
 
-    private void synchronize() {
+    private void synchronize() throws IOException {
         log("Synchronize on time " + this.zegar + " and kwant " + this.kwant);
         List<InetAddress> broadcastList = listAllBroadcastAddresses();
-        log(broadcastList.toString());
+        for (InetAddress broadcast : broadcastList) sendData(broadcast);
+    }
+
+    private void sendData(InetAddress broadcast) throws IOException {
+        String msg = "Kek Volodya";
+        byte [] all = msg.getBytes();
+
+        int length = 0;
+        while (all.length > length) {
+            byte[] sendData = new byte[256];
+
+            for (int i = 0; i < sendData.length && all.length > length; i++)
+                sendData[i] = all[length++];
+
+            System.out.println(length);
+
+            DatagramSocket clientSocket = new DatagramSocket();
+            DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, broadcast, 8080);
+
+            clientSocket.send(sendPacket);
+            clientSocket.close();
+        }
     }
 }
