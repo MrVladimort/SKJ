@@ -20,11 +20,11 @@ public class Agent {
         else
             new Agent("localhost", Integer.parseInt(args[0]), args[1], args[2], 0);
     }
-    
+
     private void log(String info) {
         DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss");
         LocalDateTime now = LocalDateTime.now();
-        System.out.println("["+dtf.format(now)+"]" + " Agent " + this.address + ": " + info);
+        System.out.println("[" + dtf.format(now) + "]" + " Agent " + this.address + ": " + info);
     }
 
     private static void write(BufferedWriter out, String msg) {
@@ -36,29 +36,30 @@ public class Agent {
             e.printStackTrace();
         }
     }
-    
+
     private Agent(String ip, int port, String monitor, int zegar) {
         this.address = new KekAddress(ip, port);
         this.zegar = zegar;
-
+        this.agents.add(this.address.toString());
         try {
             this.serverSocket = new ServerSocket(this.address.port);
+            setThreads();
             log("Server is running");
             notifyAgents(monitor);
-            this.agents.add(this.address.toString());
         } catch (IOException e) {
             e.printStackTrace();
         }
 
-        setThreads();
+        this.agents.add(this.address.toString());
     }
 
     private Agent(String ip, int port, String parent, String monitor, int zegar) {
         this.address = new KekAddress(ip, port);
         this.zegar = zegar;
-
+        this.agents.add(this.address.toString());
         try {
             this.serverSocket = new ServerSocket(this.address.port);
+            setThreads();
             log("Server is running");
             getParentAgents(parent);
             notifyAgents(monitor);
@@ -68,7 +69,6 @@ public class Agent {
             e.printStackTrace();
         }
 
-        setThreads();
     }
 
     private void synchronizeAll() throws IOException {
@@ -93,12 +93,13 @@ public class Agent {
         monitorSocket.close();
 
         for (String agent : this.agents) {
-            KekAddress agentAddress = new KekAddress(agent);
-            Socket agentSocket = new Socket(agentAddress.ip, agentAddress.port);
-            BufferedWriter outAgent = new BufferedWriter(new OutputStreamWriter(agentSocket.getOutputStream()));
-
-            write(outAgent, "agn " + this.address);
-            agentSocket.close();
+            if (!agent.equalsIgnoreCase(this.address.toString())) {
+                KekAddress agentAddress = new KekAddress(agent);
+                Socket agentSocket = new Socket(agentAddress.ip, agentAddress.port);
+                BufferedWriter outAgent = new BufferedWriter(new OutputStreamWriter(agentSocket.getOutputStream()));
+                write(outAgent, "agn " + this.address);
+                agentSocket.close();
+            }
         }
     }
 
@@ -194,26 +195,34 @@ public class Agent {
         }
     }
 
-    private void maybeSynchronize() throws IOException {
-        ArrayList<Integer> sync = new ArrayList<>();
+    private void maybeSynchronize() {
+        Thread thread = new Thread(() -> {
+            try {
+                ArrayList<Integer> sync = new ArrayList<>();
+                for (String agent : this.agents) {
+                    if (!agent.equalsIgnoreCase(this.address.toString())) {
+                        KekAddress address = new KekAddress(agent);
+                        Socket socket = new Socket(address.ip, address.port);
 
-        for (String agent : this.agents) {
-            if (!agent.equalsIgnoreCase(this.address.toString())) {
-                KekAddress address = new KekAddress(agent);
-                Socket socket = new Socket(address.ip, address.port);
+                        BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream(), "UTF-8"));
+                        BufferedWriter out = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
 
-                BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream(), "UTF-8"));
-                BufferedWriter out = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
-
-                write(out, "clk");
-                sync.add(Integer.parseInt(in.readLine()));
-                socket.close();
+                        write(out, "clk");
+                        sync.add(Integer.parseInt(in.readLine()));
+                        socket.close();
+                        Thread.sleep(10);
+                    }
+                }
+                int time = 0;
+                for (Integer tmp : sync)
+                    time += tmp;
+                if (time != 0 || sync.size() != 0)
+                    this.zegar = time / sync.size();
+            } catch (IOException | InterruptedException e) {
+                e.printStackTrace();
             }
-        }
-        int time = 0;
-        for (Integer tmp : sync)
-            time += tmp;
-        if (time != 0 || sync.size() != 0)
-            this.zegar = time / sync.size();
+        });
+
+        thread.start();
     }
 }
