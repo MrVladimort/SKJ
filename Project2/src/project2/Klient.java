@@ -10,6 +10,7 @@ import java.util.*;
 public class Klient {
     private int kwant, zegar, port;
     private InetAddress address;
+    private List<Integer> synList;
 
     public static void main(String[] args) throws UnknownHostException {
         new Klient(Integer.parseInt(args[0]), Integer.parseInt(args[1]));
@@ -55,6 +56,7 @@ public class Klient {
         this.kwant = kwant * 1000;
         this.port = 8080;
         this.address = InetAddress.getLocalHost();
+        this.synList = new ArrayList<>();
 
         setThreads();
     }
@@ -72,10 +74,15 @@ public class Klient {
                 if (!senderAddress.equals(this.address)) {
                     byte[] buffer = receivePacket.getData();
                     String msg = new String(buffer, StandardCharsets.UTF_8).trim().toLowerCase();
+                    String [] commWithArg = msg.split(" ");
 
-                    switch (msg) {
+
+                    switch (commWithArg[0]) {
                         case "clk":
                             sendDataToSocket("syn " + this.zegar, senderAddress);
+                            break;
+                        case "syn":
+                            this.synList.add(Integer.parseInt(commWithArg[1]));
                             break;
                     }
 
@@ -88,6 +95,26 @@ public class Klient {
     private void startSynchronize() throws IOException {
         log("Synchronize on time " + this.zegar + " and kwant " + this.kwant);
         for (InetAddress broadcast : listAllBroadcastAddresses()) sendDataToSocket("clk", broadcast);
+        synchronize();
+    }
+
+    private void synchronize() {
+        Thread thread = new Thread(() -> {
+            try {
+                int newZegar = 0;
+                Thread.sleep(100);
+                for (int syn : this.synList)
+                    newZegar += syn;
+                if (this.synList.size() != 0)
+                    this.zegar = newZegar / this.synList.size();
+                this.synList = new ArrayList<>();
+                log("new zegar " + this.zegar);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        });
+
+        thread.run();
     }
 
     private void sendDataToSocket(String msg, InetAddress address) throws IOException {
