@@ -70,7 +70,7 @@ public class Klient {
                 serverSocket.receive(receivePacket);
 
                 byte[] buffer = receivePacket.getData();
-                String msg = new String(buffer, StandardCharsets.UTF_8);
+                String msg = new String(buffer, StandardCharsets.UTF_8).trim().toLowerCase();
                 InetAddress senderAddress = receivePacket.getAddress();
 
                 switch (msg) {
@@ -152,7 +152,6 @@ public class Klient {
             DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, address, 8080);
             clientSocket.send(sendPacket);
         }
-
         clientSocket.close();
     }
 }
