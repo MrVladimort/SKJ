@@ -8,8 +8,8 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 public class Klient {
-    private InetAddress address;
     private int kwant, zegar, port;
+    private InetAddress address;
 
     public static void main(String[] args) throws UnknownHostException {
         new Klient(Integer.parseInt(args[0]), Integer.parseInt(args[1]));
@@ -18,7 +18,7 @@ public class Klient {
     private void log(String info) {
         DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss");
         LocalDateTime now = LocalDateTime.now();
-        System.out.println("[" + dtf.format(now) + "]" + " Klient " + this.address + ":" + this.port + " = " + info);
+        System.out.println("[" + dtf.format(now) + "]" + " Klient " + this.address + " = " + info);
     }
 
     private void setThreads() {
@@ -54,7 +54,7 @@ public class Klient {
         this.zegar = zegar;
         this.kwant = kwant * 1000;
         this.port = 8080;
-        this.address = InetAddress.getByName("localhost");
+        this.address = InetAddress.getLocalHost();
 
         setThreads();
     }
@@ -62,55 +62,33 @@ public class Klient {
     private void server404() {
         try {
             log("Server is running");
-            DatagramSocket serverSocket = new DatagramSocket(this.port);
+            DatagramSocket serverSocket = new DatagramSocket(this.port, this.address);
             byte[] receiveData = new byte[256];
 
             while (true) {
                 DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
                 serverSocket.receive(receivePacket);
-
-                byte[] buffer = receivePacket.getData();
-                String msg = new String(buffer, StandardCharsets.UTF_8).trim().toLowerCase();
                 InetAddress senderAddress = receivePacket.getAddress();
+                if (!senderAddress.equals(this.address)) {
+                    byte[] buffer = receivePacket.getData();
+                    String msg = new String(buffer, StandardCharsets.UTF_8).trim().toLowerCase();
 
-                switch (msg) {
-                    case "clk":
-                        sendDataToSocket("" + this.zegar, senderAddress);
-                        break;
-                    case "add":
-                        break;
-                    case "remove":
-                        break;
+                    switch (msg) {
+                        case "clk":
+                            sendDataToSocket("" + this.zegar, senderAddress);
+                            break;
+                        case "add":
+                            break;
+                        case "remove":
+                            break;
+                    }
+
+                    log(senderAddress + " " + msg);
                 }
-
-                log(senderAddress + " " + msg);
             }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        } catch (IOException e) { e.printStackTrace(); }
     }
 
-    private List<InetAddress> listAllBroadcastAddresses() {
-        try {
-            List<InetAddress> broadcastList = new ArrayList<>();
-            Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
-            while (interfaces.hasMoreElements()) {
-                NetworkInterface networkInterface = interfaces.nextElement();
-
-                if (networkInterface.isLoopback() || !networkInterface.isUp()) {
-                    continue;
-                }
-
-                networkInterface.getInterfaceAddresses().stream()
-                        .map(InterfaceAddress::getBroadcast)
-                        .filter(Objects::nonNull)
-                        .forEach(broadcastList::add);
-            }
-            return broadcastList;
-        } catch (IOException e) {
-            return new ArrayList<>();
-        }
-    }
 
     private void startSynchronize() throws IOException {
         log("Synchronize on time " + this.zegar + " and kwant " + this.kwant);
@@ -153,5 +131,27 @@ public class Klient {
             clientSocket.send(sendPacket);
         }
         clientSocket.close();
+    }
+
+    private List<InetAddress> listAllBroadcastAddresses() {
+        try {
+            List<InetAddress> broadcastList = new ArrayList<>();
+            Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
+            while (interfaces.hasMoreElements()) {
+                NetworkInterface networkInterface = interfaces.nextElement();
+
+                if (networkInterface.isLoopback() || !networkInterface.isUp()) {
+                    continue;
+                }
+
+                networkInterface.getInterfaceAddresses().stream()
+                        .map(InterfaceAddress::getBroadcast)
+                        .filter(Objects::nonNull)
+                        .forEach(broadcastList::add);
+            }
+            return broadcastList;
+        } catch (IOException e) {
+            return new ArrayList<>();
+        }
     }
 }
