@@ -75,7 +75,7 @@ public class Klient {
 
                     switch (msg) {
                         case "clk":
-                            sendDataToSocket("" + this.zegar, senderAddress);
+                            sendDataToSocket("syn " + this.zegar, senderAddress);
                             break;
                     }
 
@@ -87,7 +87,7 @@ public class Klient {
 
     private void startSynchronize() throws IOException {
         log("Synchronize on time " + this.zegar + " and kwant " + this.kwant);
-        for (InetAddress broadcast : listAllBroadcastAddresses()) sendDataToSocket("syn", broadcast);
+        for (InetAddress broadcast : listAllBroadcastAddresses()) sendDataToSocket("clk", broadcast);
     }
 
     private void sendDataToSocket(String msg, InetAddress address) throws IOException {
