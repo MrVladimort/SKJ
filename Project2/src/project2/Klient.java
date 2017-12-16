@@ -8,7 +8,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 public class Klient {
-    private DatagramSocket serverSocket;
     private InetAddress address;
     private int kwant, zegar, port;
 
@@ -35,7 +34,7 @@ public class Klient {
         while (true) {
             if (tmp == this.kwant) {
                 try {
-                    synchronize();
+                    startSynchronize();
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -51,7 +50,7 @@ public class Klient {
         }
     }
 
-    public Klient(int zegar, int kwant) throws UnknownHostException {
+    private Klient(int zegar, int kwant) throws UnknownHostException {
         this.zegar = zegar;
         this.kwant = kwant * 1000;
         this.port = 8080;
@@ -63,7 +62,7 @@ public class Klient {
     private void server404() {
         try {
             log("Server is running");
-            this.serverSocket = new DatagramSocket(this.port);
+            DatagramSocket serverSocket = new DatagramSocket(this.port);
             byte[] receiveData = new byte[256];
 
             while (true) {
@@ -71,10 +70,21 @@ public class Klient {
                 serverSocket.receive(receivePacket);
 
                 byte[] buffer = receivePacket.getData();
+                String msg = new String(buffer, StandardCharsets.UTF_8);
+                InetAddress senderAddress = receivePacket.getAddress();
 
-                log(receivePacket.getSocketAddress() + " " + new String(buffer, StandardCharsets.UTF_8));
+                switch (msg) {
+                    case "clk":
+                        sendDataToSocket("" + this.zegar, senderAddress);
+                        break;
+                    case "add":
+                        break;
+                    case "remove":
+                        break;
+                }
+
+                log(senderAddress + " " + msg);
             }
-
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -102,30 +112,47 @@ public class Klient {
         }
     }
 
-    private void synchronize() throws IOException {
+    private void startSynchronize() throws IOException {
         log("Synchronize on time " + this.zegar + " and kwant " + this.kwant);
-        List<InetAddress> broadcastList = listAllBroadcastAddresses();
-        for (InetAddress broadcast : broadcastList) sendData(broadcast);
+        sendDataToBroadcast("clk");
     }
 
-    private void sendData(InetAddress broadcast) throws IOException {
-        String msg = "Kek Volodya";
-        byte [] all = msg.getBytes();
+    private void synchronize() {
 
+    }
+
+    private void sendDataToBroadcast(String msg) throws IOException {
+        DatagramSocket clientSocket = new DatagramSocket();
+        byte[] all = msg.getBytes();
+
+        for (InetAddress broadcast : listAllBroadcastAddresses()) {
+            int length = 0;
+            while (all.length > length) {
+                byte[] sendData = new byte[256];
+
+                for (int i = 0; i < sendData.length && all.length > length; i++) sendData[i] = all[length++];
+
+                DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, broadcast, 8080);
+                clientSocket.send(sendPacket);
+            }
+        }
+
+        clientSocket.close();
+    }
+
+    private void sendDataToSocket(String msg, InetAddress address) throws IOException {
+        DatagramSocket clientSocket = new DatagramSocket();
+        byte[] all = msg.getBytes();
         int length = 0;
         while (all.length > length) {
             byte[] sendData = new byte[256];
 
-            for (int i = 0; i < sendData.length && all.length > length; i++)
-                sendData[i] = all[length++];
+            for (int i = 0; i < sendData.length && all.length > length; i++) sendData[i] = all[length++];
 
-            System.out.println(length);
-
-            DatagramSocket clientSocket = new DatagramSocket();
-            DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, broadcast, 8080);
-
+            DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, address, 8080);
             clientSocket.send(sendPacket);
-            clientSocket.close();
         }
+
+        clientSocket.close();
     }
 }
