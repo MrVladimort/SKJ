@@ -9,6 +9,7 @@ import java.util.*;
 
 public class Klient {
     private int kwant, zegar, port;
+    private String seconds;
     private InetAddress address;
     private List<Integer> synList;
 
@@ -31,23 +32,19 @@ public class Klient {
     }
 
     private void timeIsMoney() {
-        int tmp = 0;
-        while (true) {
-            if (tmp == this.kwant) {
-                try {
+        try {
+            int tmp = 0;
+            while (true) {
+                if (tmp == this.kwant) {
                     startSynchronize();
-                } catch (IOException e) {
-                    e.printStackTrace();
+                    tmp = 0;
                 }
-                tmp = 0;
-            }
-            tmp++;
-            this.zegar++;
-            try {
+                tmp++;
+                this.zegar++;
                 Thread.sleep(1);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
             }
+        } catch (IOException | InterruptedException e) {
+            e.printStackTrace();
         }
     }
 
@@ -57,9 +54,9 @@ public class Klient {
         this.port = 8080;
         this.address = InetAddress.getLocalHost();
         this.synList = new ArrayList<>();
+        this.seconds = "" + kwant + 's';
 
         setThreads();
-        startSynchronize();
     }
 
     private void server404() {
@@ -72,30 +69,51 @@ public class Klient {
                 DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
                 serverSocket.receive(receivePacket);
                 InetAddress senderAddress = receivePacket.getAddress();
-                if (!senderAddress.equals(this.address)) {
-                    byte[] buffer = receivePacket.getData();
-                    String msg = new String(buffer, StandardCharsets.UTF_8).trim().toLowerCase();
-                    String [] commWithArg = msg.split(" ");
-
-
-                    switch (commWithArg[0]) {
-                        case "clk":
-                            sendDataToSocket("syn " + this.zegar, senderAddress);
-                            break;
-                        case "syn":
-                            this.synList.add(Integer.parseInt(commWithArg[1]));
-                            break;
-                    }
-
+                byte[] buffer = receivePacket.getData();
+                String msg = new String(buffer, StandardCharsets.UTF_8).trim().toLowerCase();
+                String[] commWithArg = msg.split(" ");
+                String comm = commWithArg[0].trim();
+                String arg1 = commWithArg[1].trim();
+                if (!comm.equalsIgnoreCase("clk"))
                     log(senderAddress + " " + msg);
+
+                switch (comm) {
+                    case "clk":
+                        if (!senderAddress.equals(this.address))
+                            sendDataToSocket("syn " + this.zegar, senderAddress, 8080);
+                        break;
+                    case "syn":
+                        this.synList.add(Integer.parseInt(arg1));
+                        break;
+                    case "get":
+                        if (arg1.equalsIgnoreCase("counter"))
+                            sendDataToSocket("" + this.zegar, senderAddress, 9000);
+                        else if (arg1.equalsIgnoreCase("period"))
+                            sendDataToSocket("" + (this.kwant / 1000), senderAddress, 9000);
+                        break;
+                    case "set":
+                        if (arg1.equalsIgnoreCase("counter")) {
+                            this.zegar = Integer.parseInt(commWithArg[2]);
+                            sendDataToSocket("New counter " + this.zegar + " OK", senderAddress, 9000);
+                        } else if (arg1.equalsIgnoreCase("period")) {
+                            this.kwant = Integer.parseInt(commWithArg[2]) * 1000;
+                            sendDataToSocket("New period " + this.kwant / 1000 + " OK", senderAddress, 9000);
+                        }
+                        break;
+                    case "die":
+                        for (InetAddress inetAddress : listAllBroadcastAddresses())
+                            sendDataToSocket(this.address + ": I died with honor! Keep working guys", inetAddress, 8080);
+                        break;
                 }
             }
-        } catch (IOException e) { e.printStackTrace(); }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     private void startSynchronize() throws IOException {
-        log("Synchronize on time " + this.zegar + " and kwant " + this.kwant);
-        for (InetAddress broadcast : listAllBroadcastAddresses()) sendDataToSocket("clk", broadcast);
+        log("Synchronize on time " + this.zegar + " and kwant " + this.seconds);
+        for (InetAddress broadcast : listAllBroadcastAddresses()) sendDataToSocket("clk", broadcast, 8080);
         synchronize();
     }
 
@@ -103,13 +121,14 @@ public class Klient {
         Thread thread = new Thread(() -> {
             try {
                 int newZegar = 0;
-                Thread.sleep(500);
+                Thread.sleep(1000);
                 for (int syn : this.synList)
                     newZegar += syn;
-                if (this.synList.size() != 0)
-                    this.zegar = newZegar / this.synList.size();
+                int size = this.synList.size();
+                if (size != 0)
+                    this.zegar = newZegar / size;
                 this.synList = new ArrayList<>();
-                log("new zegar " + this.zegar);
+                log("New zegar " + this.zegar);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
@@ -117,7 +136,9 @@ public class Klient {
         thread.run();
     }
 
-    private void sendDataToSocket(String msg, InetAddress address) throws IOException {
+    private void sendDataToSocket(String msg, InetAddress address, int port) throws IOException {
+        log("Send data: " + msg + " to " + address);
+
         DatagramSocket clientSocket = new DatagramSocket();
         byte[] all = msg.getBytes();
         int length = 0;
@@ -126,7 +147,7 @@ public class Klient {
 
             for (int i = 0; i < sendData.length && all.length > length; i++) sendData[i] = all[length++];
 
-            DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, address, 8080);
+            DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, address, port);
             clientSocket.send(sendPacket);
         }
         clientSocket.close();
