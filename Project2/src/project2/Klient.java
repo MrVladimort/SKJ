@@ -113,7 +113,6 @@ public class Klient {
                 e.printStackTrace();
             }
         });
-
         thread.run();
     }
 
