@@ -12,7 +12,7 @@ public class Klient {
     private InetAddress address;
     private List<Integer> synList;
 
-    public static void main(String[] args) throws UnknownHostException {
+    public static void main(String[] args) throws IOException {
         new Klient(Integer.parseInt(args[0]), Integer.parseInt(args[1]));
     }
 
@@ -51,7 +51,7 @@ public class Klient {
         }
     }
 
-    private Klient(int zegar, int kwant) throws UnknownHostException {
+    private Klient(int zegar, int kwant) throws IOException {
         this.zegar = zegar;
         this.kwant = kwant * 1000;
         this.port = 8080;
@@ -59,6 +59,7 @@ public class Klient {
         this.synList = new ArrayList<>();
 
         setThreads();
+        startSynchronize();
     }
 
     private void server404() {
@@ -102,7 +103,7 @@ public class Klient {
         Thread thread = new Thread(() -> {
             try {
                 int newZegar = 0;
-                Thread.sleep(100);
+                Thread.sleep(500);
                 for (int syn : this.synList)
                     newZegar += syn;
                 if (this.synList.size() != 0)
