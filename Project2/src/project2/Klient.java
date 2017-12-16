@@ -77,10 +77,6 @@ public class Klient {
                         case "clk":
                             sendDataToSocket("" + this.zegar, senderAddress);
                             break;
-                        case "add":
-                            break;
-                        case "remove":
-                            break;
                     }
 
                     log(senderAddress + " " + msg);
@@ -89,33 +85,9 @@ public class Klient {
         } catch (IOException e) { e.printStackTrace(); }
     }
 
-
     private void startSynchronize() throws IOException {
         log("Synchronize on time " + this.zegar + " and kwant " + this.kwant);
-        sendDataToBroadcast("clk");
-    }
-
-    private void synchronize() {
-
-    }
-
-    private void sendDataToBroadcast(String msg) throws IOException {
-        DatagramSocket clientSocket = new DatagramSocket();
-        byte[] all = msg.getBytes();
-
-        for (InetAddress broadcast : listAllBroadcastAddresses()) {
-            int length = 0;
-            while (all.length > length) {
-                byte[] sendData = new byte[256];
-
-                for (int i = 0; i < sendData.length && all.length > length; i++) sendData[i] = all[length++];
-
-                DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, broadcast, 8080);
-                clientSocket.send(sendPacket);
-            }
-        }
-
-        clientSocket.close();
+        for (InetAddress broadcast : listAllBroadcastAddresses()) sendDataToSocket("syn", broadcast);
     }
 
     private void sendDataToSocket(String msg, InetAddress address) throws IOException {
@@ -139,11 +111,8 @@ public class Klient {
             Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
             while (interfaces.hasMoreElements()) {
                 NetworkInterface networkInterface = interfaces.nextElement();
-
-                if (networkInterface.isLoopback() || !networkInterface.isUp()) {
+                if (networkInterface.isLoopback() || !networkInterface.isUp())
                     continue;
-                }
-
                 networkInterface.getInterfaceAddresses().stream()
                         .map(InterfaceAddress::getBroadcast)
                         .filter(Objects::nonNull)
