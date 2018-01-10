@@ -14,7 +14,7 @@ public class Klient {
     private List<Integer> synList;
 
     public static void main(String[] args) throws IOException {
-        new Klient(Integer.parseInt(args[0]), Integer.parseInt(args[1]));
+        new Klient(Integer.parseInt(args[0]), Integer.parseInt(args[1]), Integer.parseInt(args[2]));
     }
 
     private void log(String info) {
@@ -48,10 +48,10 @@ public class Klient {
         }
     }
 
-    private Klient(int zegar, int kwant) throws IOException {
+    private Klient(int port, int zegar, int kwant) throws IOException {
         this.zegar = zegar;
         this.kwant = kwant * 1000;
-        this.port = 8080;
+        this.port = port;
         this.address = InetAddress.getLocalHost();
         this.synList = new ArrayList<>();
         this.seconds = "" + kwant + 's';
@@ -73,14 +73,17 @@ public class Klient {
                 String msg = new String(buffer, StandardCharsets.UTF_8).trim().toLowerCase();
                 String[] commWithArg = msg.split(" ");
                 String comm = commWithArg[0].trim();
-                String arg1 = commWithArg[1].trim();
-                if (!comm.equalsIgnoreCase("clk"))
-                    log(senderAddress + " " + msg);
+                String arg1 = "";
+
+                if (!msg.equals("clk"))
+                    log(senderAddress + ":" + receivePacket.getPort() + " " + msg);
+
+                if (commWithArg.length >= 2)
+                    arg1 = commWithArg[1].trim();
 
                 switch (comm) {
                     case "clk":
-                        if (!senderAddress.equals(this.address))
-                            sendDataToSocket("syn " + this.zegar, senderAddress, 8080);
+                        for (int i = 8080; i < 9000; i++) if (i != this.port) sendDataToSocket("syn " + this.zegar, senderAddress, i);
                         break;
                     case "syn":
                         this.synList.add(Integer.parseInt(arg1));
@@ -97,12 +100,15 @@ public class Klient {
                             sendDataToSocket("New counter " + this.zegar + " OK", senderAddress, 9000);
                         } else if (arg1.equalsIgnoreCase("period")) {
                             this.kwant = Integer.parseInt(commWithArg[2]) * 1000;
+                            this.seconds = commWithArg[2] + "s";
                             sendDataToSocket("New period " + this.kwant / 1000 + " OK", senderAddress, 9000);
                         }
                         break;
                     case "die":
+                        sendDataToSocket("OK", senderAddress, 9000);
                         for (InetAddress inetAddress : listAllBroadcastAddresses())
-                            sendDataToSocket(this.address + ": I died with honor! Keep working guys", inetAddress, 8080);
+                            for (int i = 8080; i < 9000; i++) if (i != this.port) sendDataToSocket(this.address + ": I died with honor! Keep working guys", inetAddress, i);
+                        System.exit(0);
                         break;
                 }
             }
@@ -113,21 +119,21 @@ public class Klient {
 
     private void startSynchronize() throws IOException {
         log("Synchronize on time " + this.zegar + " and kwant " + this.seconds);
-        for (InetAddress broadcast : listAllBroadcastAddresses()) sendDataToSocket("clk", broadcast, 8080);
+        for (InetAddress broadcast : listAllBroadcastAddresses())
+            for (int i = 8080; i < 9000; i++) if (i != this.port) sendDataToSocket("clk", broadcast, i);
         synchronize();
     }
 
     private void synchronize() {
         Thread thread = new Thread(() -> {
             try {
+                this.synList = new ArrayList<>();
+                this.synList.add(this.zegar);
                 int newZegar = 0;
                 Thread.sleep(1000);
-                for (int syn : this.synList)
-                    newZegar += syn;
+                for (int syn : this.synList) newZegar += syn;
                 int size = this.synList.size();
-                if (size != 0)
-                    this.zegar = newZegar / size;
-                this.synList = new ArrayList<>();
+                if (size != 0) this.zegar = newZegar / size;
                 log("New zegar " + this.zegar);
             } catch (InterruptedException e) {
                 e.printStackTrace();
@@ -137,16 +143,12 @@ public class Klient {
     }
 
     private void sendDataToSocket(String msg, InetAddress address, int port) throws IOException {
-        log("Send data: " + msg + " to " + address);
-
         DatagramSocket clientSocket = new DatagramSocket();
         byte[] all = msg.getBytes();
         int length = 0;
         while (all.length > length) {
             byte[] sendData = new byte[256];
-
             for (int i = 0; i < sendData.length && all.length > length; i++) sendData[i] = all[length++];
-
             DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, address, port);
             clientSocket.send(sendPacket);
         }

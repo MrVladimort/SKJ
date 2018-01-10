@@ -17,18 +17,22 @@ public class Kontroler {
 
     public static void main(String [] args) throws IOException {
         if (args.length == 3)
-            new Kontroler(args[0], args[2]);
+            new Kontroler(args[0], Integer.parseInt(args[1]), args[2]);
         else if (args.length == 4)
-            new Kontroler(args[0], args[2], Integer.parseInt(args[3]));
+            new Kontroler(args[0], Integer.parseInt(args[1]), args[3]);
+        else if (args.length == 5)
+            new Kontroler(args[0], Integer.parseInt(args[1]), args[3], Integer.parseInt(args[4]));
     }
 
-    private Kontroler(String address, String need) throws IOException {
+    private Kontroler(String address, int clientPort, String need) throws IOException {
         log("Kontroler 1");
 
         if (need.equalsIgnoreCase("counter"))
-            sendDataToSocket("get counter", InetAddress.getByName(address));
+            sendDataToSocket("get counter", InetAddress.getByName(address), clientPort);
         else if (need.equalsIgnoreCase("period"))
-            sendDataToSocket("get period", InetAddress.getByName(address));
+            sendDataToSocket("get period", InetAddress.getByName(address), clientPort);
+        else if (need.equalsIgnoreCase("die"))
+            sendDataToSocket("die", InetAddress.getByName(address), clientPort);
         else
             log("Unresolved command for get: " + need);
 
@@ -36,13 +40,13 @@ public class Kontroler {
         serverThread.run();
     }
 
-    private Kontroler(String address, String need, int value) throws IOException {
+    private Kontroler(String address, int clientPort, String need, int value) throws IOException {
         log("Kontroler 2");
 
         if (need.equalsIgnoreCase("counter"))
-            sendDataToSocket("set counter " + value, InetAddress.getByName(address));
+            sendDataToSocket("set counter " + value, InetAddress.getByName(address), clientPort);
         else if (need.equalsIgnoreCase("period"))
-            sendDataToSocket("set period " + value, InetAddress.getByName(address));
+            sendDataToSocket("set period " + value, InetAddress.getByName(address), clientPort);
         else
             log("Unresolved command for set: " + need);
 
@@ -71,7 +75,7 @@ public class Kontroler {
         }
     }
 
-    private void sendDataToSocket(String msg, InetAddress address) throws IOException {
+    private void sendDataToSocket(String msg, InetAddress address, int port) throws IOException {
         log("Send data: " + msg + " to " + address);
 
         DatagramSocket clientSocket = new DatagramSocket();
@@ -82,7 +86,7 @@ public class Kontroler {
 
             for (int i = 0; i < sendData.length && all.length > length; i++) sendData[i] = all[length++];
 
-            DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, address, 8080);
+            DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, address, port);
             clientSocket.send(sendPacket);
         }
         clientSocket.close();
